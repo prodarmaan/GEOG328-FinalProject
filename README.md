@@ -3,7 +3,7 @@
 *Armaan Azeem, Phoebe Mace*
 
 ### Description
-This application maps the per-capita income (PCI) of Seattle's census tracts and the amount of 911 emergency calls. The PCI layer is represented as an interactive chloropleth layer, and the 911 calls are represented as a dot-density later. The application also includes a table of census tract information, along with sorting functionality.
+This application maps the per-capita income (PCI) of Seattle's census tracts and the amount of 911 emergency calls ranging from August 2022 to August 2023. The PCI layer is represented as an interactive chloropleth layer, and the 911 calls are represented as a dot-density later. The application also includes a table of census tract information, along with sorting functionality.
 
 ### Project Goal
 The goal of this project is to implement skills and techniques developed throughout this course to create an interactive map application. The overall purpose of the map is to illustrate the geospatial relationship between Seattle's census tract CPI and location of 911 emergency calls. At a glance, the overall relationship appears to be that areas of higher PCI seem to have a more concentrated amount of 911 emergency calls. The target audience of this map is Seattle residents, government officials, researchers and the general public interested in understanding the relationship between the income and the number of 911 calls in the city.
