@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="author" content="Armaan, Phoebe, Amelia, Genchen">
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- Including the Mapbox GL CSS file -->
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet">
+
+  <!-- Including the Mapbox GL JS file -->
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
+  <title>Seattle Income & 911 Calls</title>
+</head>
+
+<body>
+  <main id="container">
+
+    <div id="side-panel">
+
+      <h1 id="title">Seattle Income & 911 Calls</h1>
+      <button onclick="sortTable(3)">Sort by Income</button>
+      <button onclick="sortTable(2)">Sort by Population</button>
+
+      <table>
+        <tr>
+          <th>Community Name</th>
+          <th>Census Tract</th>
+          <th>Population</th>
+          <th>Per Capita Income</th>
+        </tr>
+      </table>
+
+    </div>
+
+    <div id="map"></div>
+
+    <div class='map-overlay' id='features'>
+      <div id='text-description'>
+        <h3 id="default">Hover over a census tract for more information.</h3>
+      </div>
+    </div>
+
+    <div class='map-overlay' id='legend'></div>
+  </main>
+
+  <script>
+    // initialize basemmap
+    mapboxgl.accessToken =
+      'pk.eyJ1IjoicGhvZWJlbWFjZSIsImEiOiJjbHBiajVteGYwZGx5MnFveWpqNWQ4bWl5In0.hLWt7pwDPj_plteMfRY-uQ';
+
+    // map setup
+    const map = new mapboxgl.Map({
+      container: 'map', // container ID
+      style: 'mapbox://styles/azeem24/cloounc71004b01rb6qra9lbl', // style URL
+      zoom: 11.5, // starting zoom
+      center: [-122.32, 47.6] // starting center
+    });
+
+    async function geojsonFetch() {
+
+      let response = await fetch('assets/filtered911Calls.geojson');
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      let calls = await response.json();
+
+      response = await fetch('assets/PCI.geojson');
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      let censusTracts = await response.json();
+
+      var table = document.getElementsByTagName("table");
+      for (let i = 0; i < censusTracts.features.length; i++) {
+        // console.log(censusTracts.features[i].properties.id);
+
+        var lng = await censusTracts.features[i].geometry.coordinates[0];
+        var lat = await censusTracts.features[i].geometry.coordinates[1];
+
+        var row = table[0].insertRow(-1);
+
+        var cell1 = row.insertCell(0);
+        var cell2 = row.insertCell(1);
+        var cell3 = row.insertCell(2);
+        var cell4 = row.insertCell(3);
+        cell1.innerHTML = await censusTracts.features[i].properties.CRAName;
+        cell2.innerHTML = await censusTracts.features[i].properties.BASENAME;
+        cell3.innerHTML = await censusTracts.features[i].properties.total_population;
+        cell4.innerHTML = await censusTracts.features[i].properties.avg_income;
+
+      }
+
+      // loading chloropleth census tracts layer
+      map.on('load', () => {
+
+        map.addSource('censusTracts', {
+          type: 'geojson',
+          data: censusTracts
+        });
+
+        map.addLayer({
+          'id': 'censusTracts-layer',
+          'type': 'fill',
+          'source': 'censusTracts',
+          'paint': {
+            'fill-color': [
+              'step',
+              ['get', 'avg_income'],
+              '#FFB4B4',
+              5000,
+              '#E19090',
+              35000,
+              '#C36C6C',
+              60000,
+              '#A54848',
+              80000,
+              '#872424',
+              100000,
+              '#6A0000'
+            ],
+            'fill-outline-color': '#4c6155',
+            'fill-opacity': .7,
+          }
+        });
+
+        // loading dot density 911 emergency calls layer
+       map.addSource('calls', {
+          type: 'geojson',
+          data: calls
+        });
+
+        map.addLayer({
+          'id': 'calls-layer',
+          'type': 'circle',
+          'source': 'calls',
+          'paint': {
+            'circle-radius': 3,
+            'circle-stroke-width': 0.3,
+            'circle-color': '#333333',
+            'circle-stroke-color': '#333333',
+            'circle-opacity': 0.5
+          }
+        });
+
+        // creating the legend for the chloropleth layer
+        const legend = document.getElementById('legend');
+        const layers = [
+          '0-4999',
+          '5000-34999',
+          '35000-59999',
+          '60000-79999',
+          '80000-99999',
+          '100000-150000',
+          '911 Call'
+        ];
+        const colors = [
+          '#FFB4B470',
+          '#E1909070',
+          '#C36C6C70',
+          '#A5484870',
+          '#87242470',
+          '#6A000070',
+          '0'
+        ];
+
+        legend.innerHTML = "<b>Per Capita Income</b><br><br>";
+
+        layers.forEach((layer, i) => {
+          const color = colors[i];
+          const item = document.createElement('div');
+          const key = document.createElement('span');
+          key.className = 'legend-key';
+          key.style.backgroundColor = color;
+
+          const value = document.createElement('span');
+          value.innerHTML = `${layer}`;
+
+          // Add circle for 911 Call
+          if (layer === '911 Call') {
+            key.innerHTML =
+              '<svg height="10" width="10"><circle cx="5" cy="5" r="3" stroke="#333333" stroke-width="0.3" fill="#333333" /></svg>';
+          }
+
+          item.appendChild(key);
+          item.appendChild(value);
+          legend.appendChild(item);
+        });
+
+      });
+
+      // interactive mouse move event: display information when hovering above census tract
+      map.on('mousemove', ({
+        point
+      }) => {
+        const features = map.queryRenderedFeatures(point, {
+          layers: ['censusTracts-layer']
+        });
+
+        const infoContainer = document.getElementById('text-description');
+
+        if (features.length) {
+          const censusTract = features[0].properties;
+          const censusTractName = censusTract.BASENAME;
+          const communityName = censusTract.CRAName;
+          const income = censusTract.avg_income;
+
+          infoContainer.innerHTML =
+            `<h3>Census: ${censusTractName}</h3><p><strong>Community:</strong> ${communityName}</p><p><strong>Per Capita Income:</strong> ${income}</p>`;
+        } else {
+          infoContainer.innerHTML = `<h3>Hover over a census tract for more information.</h3>`;
+        }
+      });
+
+    }
+
+    geojsonFetch()
+      .catch(e => {
+        console.log('There has been a problem with your fetch operation: ' + e.message);
+      });
+
+    // sorting table by per-capita-income
+    function sortTable(column) {
+      var table, rows, switching, i, x, y, shouldSwitch;
+      table = document.querySelector("table");
+      switching = true;
+      var iteration = 0;
+      var maxIterations = 10000; // Set a reasonable maximum number of iterations
+
+      while (switching && iteration < maxIterations) {
+        iteration++;
+        switching = false;
+        rows = table.rows;
+
+        for (i = 1; i < (rows.length - 1); i++) {
+          shouldSwitch = false;
+          x = parseFloat(rows[i].getElementsByTagName("td")[column].innerHTML);
+          y = parseFloat(rows[i + 1].getElementsByTagName("td")[column].innerHTML);
+
+          if (x > y) {
+            shouldSwitch = true;
+            break;
+          }
+        }
+
+        if (shouldSwitch) {
+          rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+          switching = true;
+        }
+      }
+    }
+  </script>
+</body>
+
+</html>
