@@ -4,13 +4,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="author" content="Armaan, Phoebe, Amelia, Genchen">
+  <meta name="author" content="Armaan Azeem, Phoebe Mace">
   <link rel="stylesheet" href="css/style.css">
-
-  <!-- Including the Mapbox GL CSS file -->
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet">
-
-  <!-- Including the Mapbox GL JS file -->
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
   <title>Seattle Income & 911 Calls</title>
 </head>
@@ -39,13 +35,15 @@
 
     <div class='map-overlay' id='features'>
       <div id='text-description'>
-        <h3 id="default">Hover over a census tract for more information.</h3>
+        <h3 id="default">Hover over a census tract for more information.<br><br>Click on a dot for 911 call details.
+        </h3>
       </div>
     </div>
 
     <div class='map-overlay' id='legend'></div>
   </main>
 
+  <!-- javascript configuration for map -->
   <script>
     // initialize basemmap
     mapboxgl.accessToken =
@@ -94,7 +92,6 @@
         cell2.innerHTML = await censusTracts.features[i].properties.BASENAME;
         cell3.innerHTML = await censusTracts.features[i].properties.total_population;
         cell4.innerHTML = await censusTracts.features[i].properties.avg_income;
-
       }
 
       // loading chloropleth census tracts layer
@@ -131,7 +128,7 @@
         });
 
         // loading dot density 911 emergency calls layer
-       map.addSource('calls', {
+        map.addSource('calls', {
           type: 'geojson',
           data: calls
         });
@@ -182,7 +179,7 @@
           const value = document.createElement('span');
           value.innerHTML = `${layer}`;
 
-          // Add circle for 911 Call
+          // add circle to the legend for 911 call
           if (layer === '911 Call') {
             key.innerHTML =
               '<svg height="10" width="10"><circle cx="5" cy="5" r="3" stroke="#333333" stroke-width="0.3" fill="#333333" /></svg>';
@@ -195,29 +192,56 @@
 
       });
 
-      // interactive mouse move event: display information when hovering above census tract
-      map.on('mousemove', ({
+      // display information when hovering above census tract
+      map.on('mousemove', async ({
         point
       }) => {
-        const features = map.queryRenderedFeatures(point, {
+        const censusTractFeatures = map.queryRenderedFeatures(point, {
           layers: ['censusTracts-layer']
         });
 
         const infoContainer = document.getElementById('text-description');
 
-        if (features.length) {
-          const censusTract = features[0].properties;
-          const censusTractName = censusTract.BASENAME;
-          const communityName = censusTract.CRAName;
-          const income = censusTract.avg_income;
+        if (censusTractFeatures.length) {
+          const censusTract = censusTractFeatures[0];
+          const censusTractName = censusTract.properties.BASENAME;
+          const communityName = censusTract.properties.CRAName;
+          const income = censusTract.properties.avg_income;
+
+          // Get all 911 call features within the census tract polygon
+          const callsFeatures = map.queryRenderedFeatures({
+            layers: ['calls-layer'],
+            filter: ['within', censusTract.geometry]
+          });
+
+          const callsInCensusTract = callsFeatures.length;
 
           infoContainer.innerHTML =
-            `<h3>Census: ${censusTractName}</h3><p><strong>Community:</strong> ${communityName}</p><p><strong>Per Capita Income:</strong> ${income}</p>`;
+            `<h3>Census: ${censusTractName}</h3><p><strong>Community:</strong> ${communityName}</p><p><strong>Per Capita Income:</strong> ${income}</p><p><strong>911 Calls:</strong> ${callsInCensusTract}</p>`;
         } else {
-          infoContainer.innerHTML = `<h3>Hover over a census tract for more information.</h3>`;
+          infoContainer.innerHTML = `
+            <h3>Hover over a census tract for more information.</h3>
+            <h3>Click on a dot for 911 call details.</h3.
+            `;
         }
       });
 
+      // display information when a 911 call is clicked on
+      map.on('click', 'calls-layer', (e) => {
+        const feature = e.features[0].properties;
+        const address = feature.Address;
+        const datetime = feature.Datetime;
+        const type = feature.Type;
+
+        const infoContainer = document.getElementById('text-description');
+
+        infoContainer.innerHTML = `
+          <h3>911 Call Details</h3>
+          <p><strong>Type:</strong> ${type}</p>
+          <p><strong>Address:</strong> ${address}</p>
+          <p><strong>Datetime:</strong> ${datetime}</p>
+        `;
+      });
     }
 
     geojsonFetch()
@@ -226,12 +250,14 @@
       });
 
     // sorting table by per-capita-income
+    let currentSortOrder = 'desc'; // initial sorting order
+
     function sortTable(column) {
       var table, rows, switching, i, x, y, shouldSwitch;
       table = document.querySelector("table");
       switching = true;
       var iteration = 0;
-      var maxIterations = 10000; // Set a reasonable maximum number of iterations
+      var maxIterations = 10000; 
 
       while (switching && iteration < maxIterations) {
         iteration++;
@@ -243,7 +269,7 @@
           x = parseFloat(rows[i].getElementsByTagName("td")[column].innerHTML);
           y = parseFloat(rows[i + 1].getElementsByTagName("td")[column].innerHTML);
 
-          if (x > y) {
+          if ((currentSortOrder === 'asc' && x > y) || (currentSortOrder === 'desc' && x < y)) {
             shouldSwitch = true;
             break;
           }
@@ -254,6 +280,9 @@
           switching = true;
         }
       }
+
+      // Toggle sorting order for the next click
+      currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
     }
   </script>
 </body>
