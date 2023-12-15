@@ -1,6 +1,6 @@
-## GEOG 328: Group 10
+## GEOG 328: Final Project
 # Mapping Seattle Income and 911 Emergency Calls
-*Armaan Azeem, Phoebe Mace, Amelia Huang, Gengchen Dai*
+*Armaan Azeem, Phoebe Mace*
 
 ### Description
 This application maps the per-capita income (PCI) of Seattle's census tracts and the amount of 911 emergency calls. The PCI layer is represented as an interactive chloropleth layer, and the 911 calls are represented as a dot-density later. The application also includes a table of census tract information, along with sorting functionality.
