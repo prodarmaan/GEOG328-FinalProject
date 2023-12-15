@@ -8,7 +8,7 @@ This application maps the per-capita income (PCI) of Seattle's census tracts and
 ### Project Goal
 The goal of this project is to implement skills and techniques developed throughout this course to create an interactive map application. The overall purpose of the map is to illustrate the geospatial relationship between Seattle's census tract CPI and location of 911 emergency calls. At a glance, the overall relationship appears to be that areas of higher PCI seem to have a more concentrated amount of 911 emergency calls. The target audience of this map is Seattle residents, government officials, researchers and the general public interested in understanding the relationship between the income and the number of 911 calls in the city.
 
-Application URL: https://phoebermace.github.io/GEOG328-group10_final/
+Application URL: https://prodarmaan.github.io/GEOG328-FinalProject/
 
 ### Map Preview
 ![map_preview](img/updatedpreview.png)
